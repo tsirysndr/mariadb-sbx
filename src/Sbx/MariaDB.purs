@@ -102,14 +102,16 @@ netbsd = String.joinWith "\n"
   , "command -v pkgin >/dev/null 2>&1 || pkg_add pkgin"
   , "pkg_info -qE 'mariadb-server-[0-9]*' >/dev/null 2>&1 || pkgin -y install mariadb-server"
   , "pkgin clean >/dev/null 2>&1 || true"
-  , "cp -f /usr/pkg/share/examples/rc.d/mysqld /etc/rc.d/mysqld"
+  , "if [ -f /usr/pkg/share/examples/rc.d/mariadb ]; then svc=mariadb; owner=mariadb; else svc=mysqld; owner=mysql; fi"
+  , "cp -f /usr/pkg/share/examples/rc.d/$svc /etc/rc.d/$svc"
+  , "if [ \"$svc\" = mariadb ]; then { grep -v '^mariadb_datadir=' /etc/rc.conf || true; } > /etc/rc.conf.new; printf 'mariadb_datadir=/var/mysql\\n' >> /etc/rc.conf.new; mv /etc/rc.conf.new /etc/rc.conf; fi"
   -- Not enabled at boot: rc would start it before bsdkrun mounts the ZFS
   -- branch, on the bare mountpoint. Provisioning starts it after the mount.
-  , "{ grep -v '^mysqld=YES' /etc/rc.conf || true; } > /etc/rc.conf.new && mv /etc/rc.conf.new /etc/rc.conf"
+  , "{ grep -v -E '^(mysqld|mariadb)=YES' /etc/rc.conf || true; } > /etc/rc.conf.new && mv /etc/rc.conf.new /etc/rc.conf"
   , "[ -f /usr/pkg/etc/my.cnf ] || printf '[mysqld]\\nbind-address = 0.0.0.0\\n' > /usr/pkg/etc/my.cnf"
   , "grep -q 'bind-address' /usr/pkg/etc/my.cnf || printf '[mysqld]\\nbind-address = 0.0.0.0\\n' >> /usr/pkg/etc/my.cnf"
-  , "chown mysql:mysql /var/mysql"
-  , "/etc/rc.d/mysqld onestatus >/dev/null 2>&1 || /etc/rc.d/mysqld onestart >/dev/null"
+  , "chown $owner:$owner /var/mysql"
+  , "/etc/rc.d/$svc onestatus >/dev/null 2>&1 || /etc/rc.d/$svc onestart >/dev/null"
   , waitSocket
   , sql
   ]
