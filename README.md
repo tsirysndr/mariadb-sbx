@@ -7,7 +7,7 @@ Studio, drizzle-kit, the `mariadb` client and [mycli](https://www.mycli.net)
 are all wired to it.
 
 ```sh
-mariadb-sbx start                  # boots MariaDB 11 in a VM, port 3306 on 127.0.0.1
+mariadb-sbx start                  # boots MariaDB 12 in a VM, port 3306 on 127.0.0.1
 mariadb-sbx checkout -b feature    # fork the data, mount the fork
 mariadb-sbx drizzle push           # try a schema change on it
 mariadb-sbx studio                 # look at it in Drizzle Studio
@@ -84,7 +84,7 @@ Every command has `--help`.
 ## Starting
 
 ```sh
-mariadb-sbx start                               # linux, mariadb:11
+mariadb-sbx start                               # linux, mariadb:12
 mariadb-sbx start linux 10.11                   # any tag of the mariadb image
 mariadb-sbx start linux ghcr.io/you/maria:dev   # or a full image reference
 mariadb-sbx start freebsd 15.1                  # MariaDB 11.4 from pkg

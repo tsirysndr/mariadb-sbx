@@ -12,7 +12,7 @@ profile =
   { tool: "mariadb-sbx"
   , product: "MariaDB"
   , guestPort: 3306
-  , defaultTag: "11"
+  , defaultTag: "12"
   , image: \tag -> if String.contains (String.Pattern "/") tag || String.contains (String.Pattern ":") tag then tag else "mariadb:" <> tag
   , hasCredentials: true
   , defaults: { user: "root", password: "mariadb", db: "mariadb" }
