@@ -15,10 +15,11 @@ mariadb-sbx checkout main          # back to the untouched data
 mariadb-sbx branch -d feature      # done with it
 ```
 
-One parent sandbox per tool, with parallel branch instances: a VM named `mariadb-sbx`, a ZFS volume named
-`mariadb-sbx`, and a small state file under `~/.config/mariadb-sbx`. The server
-runs inside the VM; everything else (Studio, drizzle-kit, mycli) runs on the
-host and talks to it over a forwarded port.
+The sandbox uses one ZFS volume named `mariadb-sbx` and records its settings
+under `~/.config/mariadb-sbx`. Linux servers run as containers in the shared
+Docker VM. FreeBSD/NetBSD servers run inside the tool's BSD VM. Parallel
+instances share the pool but use separate datasets and database processes.
+Host tools connect through each server's own forwarded port.
 
 Written in PureScript on the [bsdkrun PureScript
 SDK](https://github.com/tsirysndr/bsdkrun-purescript).
