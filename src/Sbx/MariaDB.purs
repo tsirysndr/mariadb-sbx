@@ -21,6 +21,10 @@ profile =
       FreeBSD -> "/var/db/mysql"
       NetBSD -> "/var/mysql"
   , rootfsVolume: false
+  -- Room for the pkg/pkgsrc server packages beyond the base image's root disk.
+  , rootDisk: case _ of
+      Linux -> Nothing
+      _ -> Just "8G"
   , env: \c -> Object.fromFoldable $
       [ "MARIADB_ROOT_PASSWORD" /\ c.password
       , "MARIADB_DATABASE" /\ c.db
@@ -69,11 +73,14 @@ freebsd = String.joinWith "\n"
   [ "set -e"
   , "export PATH=/usr/local/bin:/usr/local/sbin:$PATH"
   , "pkg info -e mariadb114-server >/dev/null 2>&1 || env ASSUME_ALWAYS_YES=yes pkg install -y mariadb114-server"
-  , "sysrc mysql_enable=YES >/dev/null"
+  , "pkg clean -ay >/dev/null 2>&1 || true"
+  -- Not enabled at boot: rc would start it before bsdkrun mounts the ZFS
+  -- branch, on the bare mountpoint. Provisioning starts it after the mount.
+  , "sysrc -x mysql_enable >/dev/null 2>&1 || true"
   , "mkdir -p /usr/local/etc/mysql/conf.d"
   , "printf '[mysqld]\\nbind-address = 0.0.0.0\\n' > /usr/local/etc/mysql/conf.d/sbx.cnf"
   , "chown mysql:mysql /var/db/mysql"
-  , "service mysql-server status >/dev/null 2>&1 || service mysql-server start >/dev/null"
+  , "service mysql-server onestatus >/dev/null 2>&1 || service mysql-server onestart >/dev/null"
   , waitSocket
   , sql
   ]
@@ -82,13 +89,22 @@ netbsd :: String
 netbsd = String.joinWith "\n"
   [ "set -e"
   , "export PATH=/usr/pkg/bin:/usr/pkg/sbin:$PATH"
+  -- A fresh guest has pkg_add but no pkgin, and no PKG_PATH: point pkg_add
+  -- at the pkgsrc CDN for this release (a -current guest uses its <major>.0
+  -- packages, with a harmless platform warning) and install pkgin with it.
+  , "A=$(uname -p); [ \"$A\" = x86_64 ] && A=amd64"
+  , "export PKG_PATH=\"https://cdn.NetBSD.org/pub/pkgsrc/packages/NetBSD/$A/$(uname -r | cut -d. -f1).0/All/\""
+  , "command -v pkgin >/dev/null 2>&1 || pkg_add pkgin"
   , "pkg_info -qE 'mariadb-server-[0-9]*' >/dev/null 2>&1 || pkgin -y install mariadb-server"
+  , "pkgin clean >/dev/null 2>&1 || true"
   , "cp -f /usr/pkg/share/examples/rc.d/mysqld /etc/rc.d/mysqld"
-  , "grep -q '^mysqld=YES' /etc/rc.conf || echo 'mysqld=YES' >> /etc/rc.conf"
+  -- Not enabled at boot: rc would start it before bsdkrun mounts the ZFS
+  -- branch, on the bare mountpoint. Provisioning starts it after the mount.
+  , "{ grep -v '^mysqld=YES' /etc/rc.conf || true; } > /etc/rc.conf.new && mv /etc/rc.conf.new /etc/rc.conf"
   , "[ -f /usr/pkg/etc/my.cnf ] || printf '[mysqld]\\nbind-address = 0.0.0.0\\n' > /usr/pkg/etc/my.cnf"
   , "grep -q 'bind-address' /usr/pkg/etc/my.cnf || printf '[mysqld]\\nbind-address = 0.0.0.0\\n' >> /usr/pkg/etc/my.cnf"
   , "chown mysql:mysql /var/mysql"
-  , "/etc/rc.d/mysqld status >/dev/null 2>&1 || /etc/rc.d/mysqld start >/dev/null"
+  , "/etc/rc.d/mysqld onestatus >/dev/null 2>&1 || /etc/rc.d/mysqld onestart >/dev/null"
   , waitSocket
   , sql
   ]
