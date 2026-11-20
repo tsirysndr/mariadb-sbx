@@ -12,7 +12,7 @@ import Sbx.Profile (Os(..))
 main :: Effect Unit
 main = do
   let c = profile.defaults
-  unless (profile.url c 3306 == "mysql://root:mariadb@127.0.0.1:3306/mariadb") $ throw "url"
+  unless (profile.url "12" c 3306 == "mysql://root:mariadb@127.0.0.1:3306/mariadb") $ throw "url"
   unless (profile.image "12" == "mariadb:12" && profile.image "mariadb:10.11-jammy" == "mariadb:10.11-jammy") $ throw "image"
   unless (profile.dataDir Linux == "/var/lib/mysql") $ throw "data dir"
   unless (Object.size (profile.env c) == 2) $ throw "root env"

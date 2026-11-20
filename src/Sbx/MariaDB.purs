@@ -11,9 +11,12 @@ profile :: Profile
 profile =
   { tool: "mariadb-sbx"
   , product: "MariaDB"
+  , serves: const true
   , guestPort: 3306
   , defaultTag: "12"
   , image: \tag -> if String.contains (String.Pattern "/") tag || String.contains (String.Pattern ":") tag then tag else "mariadb:" <> tag
+  , versionNote: ""
+  , linuxOnly: false
   , hasCredentials: true
   , defaults: { user: "root", password: "mariadb", db: "mariadb" }
   , dataDir: case _ of
@@ -30,7 +33,7 @@ profile =
       [ "MARIADB_ROOT_PASSWORD" /\ c.password
       , "MARIADB_DATABASE" /\ c.db
       ] <> (if c.user == "root" then [] else [ "MARIADB_USER" /\ c.user, "MARIADB_PASSWORD" /\ c.password ])
-  , command: Nothing
+  , command: const Nothing
   , provision: case _ of
       Linux -> Nothing
       FreeBSD -> Just freebsd
@@ -38,12 +41,13 @@ profile =
   -- `ping` exits 0 whenever a server answers, even with "access denied";
   -- during the image's first-boot initialisation the temporary server has no
   -- TCP listener, so this stays false until the real one is up.
-  , ready: \_ _ -> withBsdPath "mariadb-admin ping -h 127.0.0.1 --silent"
-  , client: Guest \_ c -> withBsdPath ("mariadb -h 127.0.0.1 -u " <> shellQuote c.user <> " -p" <> shellQuote c.password <> " " <> shellQuote c.db)
+  , ready: \_ _ _ -> withBsdPath "mariadb-admin ping -h 127.0.0.1 --silent"
+  , client: Guest \_ _ c -> withBsdPath ("mariadb -h 127.0.0.1 -u " <> shellQuote c.user <> " -p" <> shellQuote c.password <> " " <> shellQuote c.db)
   , clientName: "mariadb"
+  , clientAliases: [ "mysql" ]
   , fancy: { name: "mycli", cmd: HostTool \c port -> [ "mycli", url c port ] }
-  , url
-  , studioSupported: const true
+  , url: const url
+  , studioSupported: \_ _ -> true
   , dialect: "mysql"
   , driver: "mysql2"
   , migrations: Nothing
