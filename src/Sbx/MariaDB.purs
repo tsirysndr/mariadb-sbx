@@ -21,6 +21,7 @@ profile =
       FreeBSD -> "/var/db/mysql"
       NetBSD -> "/var/mysql"
   , rootfsVolume: false
+  , tools: Nothing
   -- Room for the pkg/pkgsrc server packages beyond the base image's root disk.
   , rootDisk: case _ of
       Linux -> Nothing
